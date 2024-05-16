@@ -1,8 +1,10 @@
-const { parse, add } = require('date-fns');
-const { addYears, addMonths, addWeeks, addDays } = require('date-fns');
+const { parseISO, addYears, addMonths, addWeeks, addDays } = require('date-fns');
 
 function getAccessExtension(currentExpirationDate, extensionType, extensionLength) {
-  let expiration = parse(currentExpirationDate);
+  let expiration = new Date();
+  if (currentExpirationDate != undefined) {
+    expiration = parseISO(currentExpirationDate);
+  }
 
   switch (extensionType) {
     case 'Y':

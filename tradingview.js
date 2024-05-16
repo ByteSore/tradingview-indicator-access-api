@@ -1,5 +1,5 @@
 const os = require("os");
-const { encode_multipart_formdata } = require("./helper");
+const helper = require("./helper");
 const axios = require("axios");
 const querystring = require("querystring");
 require("dotenv").config();
@@ -67,11 +67,12 @@ class TradingView {
       const loginResponse = await axios.post(urls["signin"], body, {
         headers: login_headers,
       });
-      console.log("Debug >> Login Response", loginResponse);
+      // console.log("Debug >> Login Response", loginResponse);
       const cookies =
-        loginResponse.headers && loginResponse.headers["Set-Cookie"];
+        loginResponse.headers && loginResponse.headers["set-cookie"];
       if (cookies) {
-        console.log("Login Response:", loginResponse.data);
+        console.log(loginResponse.headers["set-cookie"]);
+        // console.log("Login Response:", loginResponse.data);
         this.sessionid = cookies
           .find((cookie) => cookie.startsWith("sessionid="))
           .split("=")[1]

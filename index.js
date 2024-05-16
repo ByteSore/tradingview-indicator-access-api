@@ -6,12 +6,68 @@ const app = express();
 app.use(bodyParser.json());
 
 app.get('/validate/:username', async (req, res) => {
+  try {
+    const username = req.params.username;
+    const tv = new tradingview();
+    const response = await tv.validateUsername(username);  // Use await here
+    res.json(response);
+  } catch (e) {
+    console.error("[X] Exception Occurred : ", e);
+    const failureResponse = {
+      errorMessage: 'Unknown Exception Occurred',
+    };
+    res.status(500).json(failureResponse);
+  }
+});
+  
+app.route('/readAccess/:username')
+  .all((req, res, next) => {
+    req.username = req.params.username;
+    next();
+  })
+  .post(async (req, res) => {
     try {
-      const username = req.params.username;
-      console.log(username);
+      const jsonPayload = req.body;
+      const pineIds = jsonPayload.pine_ids;
       const tv = new tradingview();
-      const response = await tv.validateUsername(username);  // Use await here
-      res.json(response);
+      const accessList = [];
+      for (const pineId of pineIds) {
+        const access = await tv.getAccessDetails(req.username, pineId);
+        accessList.push(access);
+      }
+      res.json(accessList);
+
+    } catch (e) {
+      console.error("[X] Exception Occurred : ", e);
+      const failureResponse = {
+        errorMessage: 'Unknown Exception Occurred',
+      };
+      res.status(500).json(failureResponse);
+    }
+  });
+
+app.route('/giveAccess/:username')
+  .all((req, res, next) => {
+    req.username = req.params.username;
+    next();
+  })
+  .post(async (req, res) => {
+    try {
+      const jsonPayload = req.body;
+      const pineIds = jsonPayload.pine_ids;
+      const accessList = [];
+      const tv = new tradingview();
+      for (const pineId of pineIds) {
+        await tv.getAccessDetails(req.username, pineId).then(async function(result) {
+          const duration = jsonPayload.duration;
+          const dNumber = parseInt(duration.slice(0, -1));
+          const dType = duration.slice(-1);
+          const access = await tv.addAccess(result, dType, dNumber);
+          accessList.push(access);
+        })
+      }
+      res.json(accessList);
+
     } catch (e) {
       console.error("[X] Exception Occurred : ", e);
       const failureResponse = {
@@ -21,77 +77,25 @@ app.get('/validate/:username', async (req, res) => {
     }
   });
   
-
-app.route('/access/:username')
+app.route('/removeAccess/:username')
   .all((req, res, next) => {
     req.username = req.params.username;
     next();
   })
-  .get((req, res) => {
+  .post(async (req, res) => {
     try {
       const jsonPayload = req.body;
       const pineIds = jsonPayload.pine_ids;
-      console.log(jsonPayload);
-      console.log(pineIds);
-      const tv = new tradingview();
       const accessList = [];
+      const tv = new tradingview();
       for (const pineId of pineIds) {
-        const access = tv.getAccessDetails(req.username, pineId);
-        accessList.push(access);
+        await tv.getAccessDetails(req.username, pineId).then(async function(result) {
+          const access = await tv.removeAccess(result);
+          accessList.push(access);
+        })
       }
       res.json(accessList);
-    } catch (e) {
-      console.error("[X] Exception Occurred : ", e);
-      const failureResponse = {
-        errorMessage: 'Unknown Exception Occurred',
-      };
-      res.status(500).json(failureResponse);
-    }
-  })
-  .post((req, res) => {
-    try {
-      const jsonPayload = req.body;
-      const pineIds = jsonPayload.pine_ids;
-      const tv = new tradingview();
-      const accessList = [];
-      for (const pineId of pineIds) {
-        const access = tv.getAccessDetails(req.username, pineId);
-        accessList.push(access);
-      }
 
-      const duration = jsonPayload.duration;
-      const dNumber = parseInt(duration.slice(0, -1));
-      const dType = duration.slice(-1);
-
-      for (const access of accessList) {
-        tv.addAccess(access, dType, dNumber);
-      }
-
-      res.json(accessList);
-    } catch (e) {
-      console.error("[X] Exception Occurred : ", e);
-      const failureResponse = {
-        errorMessage: 'Unknown Exception Occurred',
-      };
-      res.status(500).json(failureResponse);
-    }
-  })
-  .delete((req, res) => {
-    try {
-      const jsonPayload = req.body;
-      const pineIds = jsonPayload.pine_ids;
-      const tv = new tradingview();
-      const accessList = [];
-      for (const pineId of pineIds) {
-        const access = tv.getAccessDetails(req.username, pineId);
-        accessList.push(access);
-      }
-
-      for (const access of accessList) {
-        tv.removeAccess(access);
-      }
-
-      res.json(accessList);
     } catch (e) {
       console.error("[X] Exception Occurred : ", e);
       const failureResponse = {
